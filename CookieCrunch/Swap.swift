@@ -13,6 +13,7 @@ struct Swap: CustomStringConvertible {
     init(cookieA: Cookie, cookieB: Cookie) {
         self.cookieA = cookieA
         self.cookieB = cookieB
+        
     }
     
     var description: String {

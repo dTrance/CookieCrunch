@@ -24,7 +24,7 @@ enum CookieType: Int, CustomStringConvertible {
     }
     
     var highlightedSpriteName: String {
-        return spriteName + "Highlighted"
+        return spriteName + "-Highlighted"
     }
     
     static func random() -> CookieType {
