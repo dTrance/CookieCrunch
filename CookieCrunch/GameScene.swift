@@ -26,6 +26,12 @@ class GameScene: SKScene {
     private var swipeFromColumn: Int?
     private var swipeFromRow: Int?
     
+    let swapSound = SKAction.playSoundFileNamed("Chomp.wav", waitForCompletion: false)
+    let invalidSwapSound = SKAction.playSoundFileNamed("Error.wav", waitForCompletion: false)
+    let matchSound = SKAction.playSoundFileNamed("Ka-Ching.wav", waitForCompletion: false)
+    let fallingCookieSound = SKAction.playSoundFileNamed("Scrape", waitForCompletion: false)
+    let addCookieSound = SKAction.playSoundFileNamed("Drip.wav", waitForCompletion: false)
+    
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder) is not used in this app")
     }
@@ -141,24 +147,27 @@ class GameScene: SKScene {
         }
     }
     
-    func trySwap(horizontal horzDelta: Int, vertical verDelta: Int) {
-        //1
+    
+    func trySwap(horizontal horzDelta: Int, vertical vertDelta: Int) {
         let toColumn = swipeFromColumn! + horzDelta
-        let toRow = swipeFromRow! + verDelta
-        //2
+        let toRow = swipeFromRow! + vertDelta
+        
+        // Going outside the bounds of the array? This happens when the user swipes
+        // over the edge of the grid. We should ignore such swipes.
         guard toColumn >= 0 && toColumn < NumColumns else { return }
         guard toRow >= 0 && toRow < NumRows else { return }
         
-        //3
+        // Can't swap if there is no cookie to swap with. This happens when the user
+        // swipes into a gap where there is no tile.
         if let toCookie = level.cookieAt(column: toColumn, row: toRow),
-            let fromCookie = level.cookieAt(column: swipeFromColumn!, row: swipeFromRow!) {
-            //4
-            if let handler = swipeHandler {
-                let swap = Swap(cookieA: fromCookie, cookieB: toCookie)
-                handler(swap)
-            }
+            let fromCookie = level.cookieAt(column: swipeFromColumn!, row: swipeFromRow!),
+            let handler = swipeHandler {
+            // Communicate this swap request back to the ViewController.
+            let swap = Swap(cookieA: fromCookie, cookieB: toCookie)
+            handler(swap)
         }
     }
+    
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if selectionSprite.parent != nil && swipeFromColumn != nil {
@@ -188,6 +197,7 @@ class GameScene: SKScene {
         let moveB = SKAction.move(to: spriteA.position, duration: duration)
         moveB.timingMode = .easeOut
         spriteB.run(moveB)
+        run(swapSound)
     }
     
     func showSelectionIndicatorForCookie(cookie: Cookie) {
@@ -212,7 +222,25 @@ class GameScene: SKScene {
     }
     
     
-    
+    func animateInvalidSwap(_ swap: Swap, completion: @escaping () -> ()) {
+        let spriteA = swap.cookieA.sprite!
+        let spriteB = swap.cookieB.sprite!
+        
+        spriteA.zPosition = 100
+        spriteB.zPosition = 90
+        
+        let duration: TimeInterval = 0.2
+        
+        let moveA = SKAction.move(to: spriteB.position, duration: duration)
+        moveA.timingMode = .easeOut
+        
+        let moveB = SKAction.move(to: spriteA.position, duration: duration)
+        moveB.timingMode = .easeOut
+        
+        spriteA.run(SKAction.sequence([moveA, moveB]), completion: completion)
+        spriteB.run(SKAction.sequence([moveB, moveA]))
+        run(invalidSwapSound)
+    }
     
     
     
